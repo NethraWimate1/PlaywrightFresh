@@ -33,7 +33,8 @@ export default defineConfig({
     acceptDownloads: true,
     baseURL: 'https://untangled.cloudtesla.com',
     timeout: 60000,
-  headless: false,
+
+    headless: process.env.CI ? true : false,
     actionTimeout: 60000,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
