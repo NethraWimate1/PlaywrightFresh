@@ -5,10 +5,12 @@ import { ReportStudioPage } from '../pages/ReportStudioPage.js';
 import ExcelUtility from '../Utilities/ExcelUtility.js';  
 import Comparison from '../Utilities/Comparison.js'; 
 import MailUtil from '../Utilities/MailUtil.js'; 
-import ReportUtil from '../Utilities/ReportUtil.js';
+import DateGetterUtility from '../Utilities/DateGetterUtility.js';  
 
 test('Login', async ({ page, context }) => {
   const loginPage = new LoginPage(page);
+  const date=new DateGetterUtility();
+
   await context.grantPermissions(['geolocation'], {
     origin: 'https://untangled.cloudtesla.com'
   });
@@ -32,10 +34,12 @@ test('Login', async ({ page, context }) => {
   await reportStudioPage.clickSavedQueryButton();
   await reportStudioPage.savedQueryPageValidation();
   await reportStudioPage.searchSavedQueryAndClick('TestTickets');
-  await reportStudioPage.selectDate('2026-07-02');
+  const dates = await DateGetterUtility.getPreviousDate(2);
+
+  await reportStudioPage.selectDate(dates);
   await reportStudioPage.clickApplyButton();
   await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-  await page.waitForTimeout(8000); // Wait for 5 seconds to ensure the data is loaded
+  await page.waitForTimeout(9000); // Wait for 5 seconds to ensure the data is loaded
   await reportStudioPage.clickExportButton();
 const filePath = await reportStudioPage.clickExportExcelButton();
 
