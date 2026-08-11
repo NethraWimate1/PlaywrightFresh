@@ -18,7 +18,7 @@ class MailUtil {
        const mailOptions = {
     from: process.env.EMAIL,
     to: process.env.RECEIVER_EMAIL,
-    cc:process.env.CCEMAIL,
+   // cc:process.env.CCEMAIL,
     subject: "Ticket Validation Report",
 
     html: `
