@@ -36,5 +36,7 @@ await dashboardPage.clickAdd(formName);
 await dashboardPage.submit();
 await dashboardPage.waitForLoader();
 await dashboardPage.clickSuccessPopup();
+
 await page.waitForTimeout(2000); // Wait for 2 seconds to ensure the data is loaded
+
 });

@@ -15,6 +15,7 @@ export class ReportStudioPage {
     this.exportExcelButton = page.getByRole('menuitem', { name: 'Export as Excel' });
 
   }
+
   async clickHamburguerMenu() {
     await this.hamburguerMenu.click();
   }
@@ -72,5 +73,12 @@ export class ReportStudioPage {
     return filePath;
 
 }
+async getCountOfRecords(Form) {
+   //return await this.page.locator("//h3[contains(text(),'"+Form+"')]/following::span[@data-ref='lbRecordCount']").textContent();
+   return await this.page
+        .locator("//h3[contains(.,'" + Form + "')]/following::ag-grid-angular[1]//span[@data-ref='lbRecordCount']")
+        .textContent();
+}
+  
 
 }

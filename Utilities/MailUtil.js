@@ -2,7 +2,107 @@ import nodemailer from 'nodemailer';
 
 class MailUtil {
 
-    static async sendReport(    missingGT,
+    static async sendReport(subject, title, rows, sections = []) {
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL,
+                pass: process.env.APP_PASSWORD
+            }
+        });
+
+        // Summary rows
+        const summaryRows = rows.map(row => `
+            <tr>
+                <td>${row.name}</td>
+                <td>${row.content}</td>
+            </tr>
+        `).join('');
+
+        // Detailed sections
+        const sectionContent = sections.map(section => `
+            <h3 style="color:${section.color || '#2E86C1'};">
+                ${section.title}
+            </h3>
+
+            ${
+                section.items && section.items.length > 0
+                ?
+                `
+                <ul>
+                    ${section.items.map(item => `
+                        <li>${item}</li>
+                    `).join('')}
+                </ul>
+                `
+                :
+                `<p style="color:green;"><b>✔ No records found.</b></p>`
+            }
+        `).join('');
+
+        const mailOptions = {
+
+            from: process.env.EMAIL,
+
+            to: process.env.RECEIVER_EMAIL,
+            cc:process.env.CCEMAIL,
+
+            subject: subject,
+
+            html: `
+            <html>
+
+            <body style="font-family:Arial,sans-serif;">
+
+                <h2 style="color:#2E86C1;">
+                    ${title}
+                </h2>
+
+                <p>Hello Team,</p>
+
+                <p>
+                    The automated validation has completed.
+                </p>
+
+                <h3>Summary</h3>
+
+                <table border="1"
+                       cellpadding="8"
+                       cellspacing="0"
+                       style="border-collapse:collapse;width:100%;">
+
+                    <tr style="background-color:#D6EAF8;">
+                        <th>Validation</th>
+                        <th>Count</th>
+                    </tr>
+
+                    ${summaryRows}
+
+                </table>
+
+                <br>
+
+                ${sectionContent}
+
+                <br>
+
+                <p>
+                    Regards,<br>
+                    <b>Automation Bot</b>
+                </p>
+
+            </body>
+
+            </html>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        console.log('Email sent successfully.');
+    }
+       static async sendReport1(    missingGT,
     mismatchGT,
     missingWO,
     mismatchWO) {

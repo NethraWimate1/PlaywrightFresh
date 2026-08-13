@@ -132,7 +132,7 @@ console.log("Mismatch GT:", mismatchGT.length);
 console.log("Missing WO:", missingWO.length);
 console.log("Mismatch WO:", mismatchWO.length);
 
-await MailUtil.sendReport(
+await MailUtil.sendReport1(
     missingGT,
     mismatchGT,
     missingWO,
