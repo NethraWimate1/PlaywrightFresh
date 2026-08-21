@@ -140,3 +140,44 @@ await MailUtil.sendReport(
     expect(TPA_COUNT).toEqual(TPA_LOOKUPCount);
     
 });
+test("paryaavarneer Lookup and Main Count", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+      const reportStudioPage = new ReportStudioPage(page);
+      const dashboardPage = new DashboardPage(page);
+    
+    await loginPage.navigate();
+    await loginPage.login(process.env.paryaaUnameClimaveneta,
+    process.env.paryaaPASSWORDClimaveneta);
+    dashboardPage.openReportStudio();
+   // await expect(page).toHaveURL(/reportStudio/); 
+    await reportStudioPage.clickHamburguerMenu();
+    await reportStudioPage.clickSavedQueryButton();
+    await reportStudioPage.savedQueryPageValidation();
+    await reportStudioPage.searchSavedQueryAndClick('Main');
+    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
+    const maintablecount = await reportStudioPage.getCountOfRecords('ParyAI Expenses');
+   // console.log("Web Complaint Main Record Count: " + maintablecount);
+    await reportStudioPage.clickHamburguerMenu();
+    await reportStudioPage.clickSavedQueryButton();
+    await reportStudioPage.savedQueryPageValidation();
+    await reportStudioPage.searchSavedQueryAndClick('Lookupcount');
+    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
+    const lookupcount = await reportStudioPage.getCountOfRecords('ParyAI Expenses');
+        const rows = [
+    {
+        name: 'ParyAI Expensest',
+        content: `Main: ${maintablecount} | Lookup: ${lookupcount} | ${
+            maintablecount === lookupcount ? 'No Mismatch' : 'Mismatch'
+        }`
+    }
+];
+
+await MailUtil.sendReport(
+    'ParyAI - Lookup and Main Count',
+    'ParyAI Validation Report',
+    rows
+);
+    expect(maintablecount).toEqual(lookupcount);    
+ 
+    
+});
