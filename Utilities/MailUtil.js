@@ -62,7 +62,7 @@ class MailUtil {
                 <p>Hello Team,</p>
 
                 <p>
-                    The automated validation has completed.
+                    The automated validation has completed for last 6 months record.
                 </p>
 
                 <h3>Summary</h3>
