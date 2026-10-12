@@ -2,182 +2,176 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { ReportStudioPage } from '../pages/ReportStudioPage';
 import { DashboardPage } from '../pages/DashboardPage';
-import MailUtil  from '../Utilities/MailUtil';
-test("WebComplaint BNB Lookup and Main Count", async ({ page }) => {
-    const loginPage = new LoginPage(page);
-      const reportStudioPage = new ReportStudioPage(page);
-      const dashboardPage = new DashboardPage(page);
-    
-    await loginPage.navigate();
-    await loginPage.login(process.env.Uname,
-    process.env.PASSWORD);
-    dashboardPage.openReportStudio();
-    await expect(page).toHaveURL(/reportStudio/); 
-    await reportStudioPage.clickHamburguerMenu();
-    await reportStudioPage.clickSavedQueryButton();
-    await reportStudioPage.savedQueryPageValidation();
-    await reportStudioPage.searchSavedQueryAndClick('WebComplaint Main Record');
-    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-    const maintablecount = await reportStudioPage.getCountOfRecords('Web Complaint');
-    const WorkOrdercount = await reportStudioPage.getCountOfRecords('Work Order');
-    const GT_COUNT = await reportStudioPage.getCountOfRecords('General Tasks');
-    const TO_COUNT = await reportStudioPage.getCountOfRecords('Ticket Overview Form');
-    const TPA_COUNT = await reportStudioPage.getCountOfRecords('Task and PPM Activity');
-   // console.log("Web Complaint Main Record Count: " + maintablecount);
-    await reportStudioPage.clickHamburguerMenu();
-    await reportStudioPage.clickSavedQueryButton();
-    await reportStudioPage.savedQueryPageValidation();
-    await reportStudioPage.searchSavedQueryAndClick('WebComplaint_Yesterday_data');
-    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-    const WebComplaintlookupcount = await reportStudioPage.getCountOfRecords('Web Complaint');
-        const WorkOrderlookupcount = await reportStudioPage.getCountOfRecords('Work Order');
-    const GT_LOOKUPCount = await reportStudioPage.getCountOfRecords('General Tasks');
-    const TO_LOOKUPCount = await reportStudioPage.getCountOfRecords('Ticket Overview Form');
-        const TPA_LOOKUPCount = await reportStudioPage.getCountOfRecords('Task and PPM Activity');
-        const rows = [
-    {
-        name: 'Web Complaint',
-        content: `Main: ${maintablecount} | Lookup: ${WebComplaintlookupcount} | ${
-            maintablecount === WebComplaintlookupcount ? 'No Mismatch' : 'Mismatch'
-        }`
-    },
-    {
-        name: 'Work Order',
-        content: `Main: ${WorkOrdercount} | Lookup: ${WorkOrderlookupcount} | ${
-            WorkOrdercount === WorkOrderlookupcount ? 'No Mismatch' : 'Mismatch'
-        }`
-    },
-    {
-        name: 'General Tasks',
-        content: `Main: ${GT_COUNT} | Lookup: ${GT_LOOKUPCount} | ${
-            GT_COUNT === GT_LOOKUPCount ? 'No Mismatch' : 'Mismatch'
-        }`
-    },
-    {
-        name: 'Ticket Overview Form',
-        content: `Main: ${TO_COUNT} | Lookup: ${TO_LOOKUPCount} | ${
-            TO_COUNT === TO_LOOKUPCount ? 'No Mismatch' : 'Mismatch'
-        }`
-    },
-    {
-        name: 'Task and PPM Activity',
-        content: `Main: ${TPA_COUNT} | Lookup: ${TPA_LOOKUPCount} | ${
-            TPA_COUNT === TPA_LOOKUPCount ? 'No Mismatch' : 'Mismatch'
-        }`
+import MailUtil from '../Utilities/MailUtil';
+
+test('Combined Lookup and Main Count Validation', async ({ browser }) => {
+
+    test.setTimeout(0);
+
+    const allReportRows = [];
+    const failures = [];
+
+    // Run validation for one customer/account
+    async function validateCounts(config) {
+        const page = await browser.newPage();
+
+        try {
+            const loginPage = new LoginPage(page);
+            const reportStudioPage = new ReportStudioPage(page);
+            const dashboardPage = new DashboardPage(page);
+
+            // Login
+            await loginPage.navigate();
+            await loginPage.login(
+                config.username,
+                config.password
+            );
+
+            await dashboardPage.openReportStudio();
+            await expect(page).toHaveURL(/reportStudio/);
+
+            // Open Main saved query
+            await reportStudioPage.clickHamburguerMenu();
+            await reportStudioPage.clickSavedQueryButton();
+            await reportStudioPage.savedQueryPageValidation();
+            await reportStudioPage.searchSavedQueryAndClick(
+                config.mainQuery
+            );
+
+            await expect(
+                page.getByText(
+                    'Loading… please enjoy this virtual cup of coffee! ☕'
+                )
+            ).toBeHidden();
+
+            const mainCounts = {};
+
+            for (const form of config.forms) {
+                mainCounts[form] =
+                    await reportStudioPage.getCountOfRecords(form);
+            }
+
+            // Open Lookup saved query
+            await reportStudioPage.clickHamburguerMenu();
+            await reportStudioPage.clickSavedQueryButton();
+            await reportStudioPage.savedQueryPageValidation();
+            await reportStudioPage.searchSavedQueryAndClick(
+                config.lookupQuery
+            );
+
+            await expect(
+                page.getByText(
+                    'Loading… please enjoy this virtual cup of coffee! ☕'
+                )
+            ).toBeHidden();
+
+            const lookupCounts = {};
+
+            for (const form of config.forms) {
+                lookupCounts[form] =
+                    await reportStudioPage.getCountOfRecords(form);
+            }
+
+            // Collect report rows and mismatches
+            for (const form of config.forms) {
+                const main = mainCounts[form];
+                const lookup = lookupCounts[form];
+                const isMatch = main === lookup;
+
+                allReportRows.push({
+                    name: `${config.name} - ${form}`,
+                    content:
+                        `Main: ${main} | Lookup: ${lookup} | ` +
+                        `${isMatch ? 'No Mismatch' : 'Mismatch'}`
+                });
+
+                if (!isMatch) {
+                    failures.push(
+                        `${config.name} - ${form}: ` +
+                        `Main=${main}, Lookup=${lookup}`
+                    );
+                }
+            }
+
+        } finally {
+            await page.close();
+        }
     }
-];
 
-await MailUtil.sendReport(
-    'BNB - Lookup and Main Count',
-    'BNB Validation Report',
-    rows
-);
-    expect(maintablecount).toEqual(WebComplaintlookupcount);    
-    expect(WorkOrdercount).toEqual(WorkOrderlookupcount);
-    expect(GT_COUNT).toEqual(GT_LOOKUPCount);
-    expect(TO_COUNT).toEqual(TO_LOOKUPCount);
-    expect(TPA_COUNT).toEqual(TPA_LOOKUPCount);
+    // All three account configurations
+    const configurations = [
+        {
+            name: 'BNB',
+            username: process.env.Uname,
+            password: process.env.PASSWORD,
+            mainQuery: 'WebComplaint Main Record',
+            lookupQuery: 'WebComplaint_Yesterday_data',
+            forms: [
+                'Web Complaint',
+                'Work Order',
+                'General Tasks',
+                'Ticket Overview Form',
+                'Task and PPM Activity'
+            ]
+        },
+        {
+            name: 'Climaveneta',
+            username: process.env.UnameClimaveneta,
+            password: process.env.PASSWORDClimaveneta,
+            mainQuery: 'Web Complaint_Main',
+            lookupQuery: 'WebComplaint_Lookup',
+            forms: [
+                'Web Complaint',
+                'Work Order',
+                'Task'
+            ]
+        },
+        {
+            name: 'ParyAI',
+            username: process.env.paryaaUnameClimaveneta,
+            password: process.env.paryaaPASSWORDClimaveneta,
+            mainQuery: 'Main',
+            lookupQuery: 'Lookupcount',
+            forms: [
+                'ParyAI Expenses'
+            ]
+        }
+    ];
 
+    // Execute all validations sequentially
+    for (const config of configurations) {
+        try {
+            await validateCounts(config);
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : String(error);
 
+            failures.push(
+                `${config.name} validation failed: ${errorMessage}`
+            );
 
-});
-test("WebComplaint Climaveneta Lookup and Main Count", async ({ page }) => {
-    const loginPage = new LoginPage(page);
-      const reportStudioPage = new ReportStudioPage(page);
-      const dashboardPage = new DashboardPage(page);
-    
-    await loginPage.navigate();
-    await loginPage.login(process.env.UnameClimaveneta,
-    process.env.PASSWORDClimaveneta);
-    dashboardPage.openReportStudio();
-    await expect(page).toHaveURL(/reportStudio/); 
-    await reportStudioPage.clickHamburguerMenu();
-    await reportStudioPage.clickSavedQueryButton();
-    await reportStudioPage.savedQueryPageValidation();
-    await reportStudioPage.searchSavedQueryAndClick('Web Complaint_Main');
-    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-    const maintablecount = await reportStudioPage.getCountOfRecords('Web Complaint');
-    const WorkOrdercount = await reportStudioPage.getCountOfRecords('Work Order');
-    const TPA_COUNT = await reportStudioPage.getCountOfRecords('Task');
-   // console.log("Web Complaint Main Record Count: " + maintablecount);
-    await reportStudioPage.clickHamburguerMenu();
-    await reportStudioPage.clickSavedQueryButton();
-    await reportStudioPage.savedQueryPageValidation();
-    await reportStudioPage.searchSavedQueryAndClick('WebComplaint_Lookup');
-    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-    const WebComplaintlookupcount = await reportStudioPage.getCountOfRecords('Web Complaint');
-        const WorkOrderlookupcount = await reportStudioPage.getCountOfRecords('Work Order');
-        const TPA_LOOKUPCount = await reportStudioPage.getCountOfRecords('Task');
-        const rows = [
-    {
-        name: 'Web Complaint',
-        content: `Main: ${maintablecount} | Lookup: ${WebComplaintlookupcount} | ${
-            maintablecount === WebComplaintlookupcount ? 'No Mismatch' : 'Mismatch'
-        }`
-    },
-    {
-        name: 'Work Order',
-        content: `Main: ${WorkOrdercount} | Lookup: ${WorkOrderlookupcount} | ${
-            WorkOrdercount === WorkOrderlookupcount ? 'No Mismatch' : 'Mismatch'
-        }`
-    },
-    {
-        name: 'Task',
-        content: `Main: ${TPA_COUNT} | Lookup: ${TPA_LOOKUPCount} | ${
-            TPA_COUNT === TPA_LOOKUPCount ? 'No Mismatch' : 'Mismatch'
-        }`
+            allReportRows.push({
+                name: `${config.name} - Validation Error`,
+                content: errorMessage
+            });
+        }
     }
-];
 
-await MailUtil.sendReport(
-    'Climaveneta - Lookup and Main Count',
-    'Climaveneta Validation Report',
-    rows
-);
-    expect(maintablecount).toEqual(WebComplaintlookupcount);    
-    expect(WorkOrdercount).toEqual(WorkOrderlookupcount);
- 
-    expect(TPA_COUNT).toEqual(TPA_LOOKUPCount);
-    
-});
-test("paryaavarneer Lookup and Main Count", async ({ page }) => {
-    const loginPage = new LoginPage(page);
-      const reportStudioPage = new ReportStudioPage(page);
-      const dashboardPage = new DashboardPage(page);
-    
-    await loginPage.navigate();
-    await loginPage.login(process.env.paryaaUnameClimaveneta,
-    process.env.paryaaPASSWORDClimaveneta);
-    dashboardPage.openReportStudio();
-   // await expect(page).toHaveURL(/reportStudio/); 
-    await reportStudioPage.clickHamburguerMenu();
-    await reportStudioPage.clickSavedQueryButton();
-    await reportStudioPage.savedQueryPageValidation();
-    await reportStudioPage.searchSavedQueryAndClick('Main');
-    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-    const maintablecount = await reportStudioPage.getCountOfRecords('ParyAI Expenses');
-   // console.log("Web Complaint Main Record Count: " + maintablecount);
-    await reportStudioPage.clickHamburguerMenu();
-    await reportStudioPage.clickSavedQueryButton();
-    await reportStudioPage.savedQueryPageValidation();
-    await reportStudioPage.searchSavedQueryAndClick('Lookupcount');
-    await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
-    const lookupcount = await reportStudioPage.getCountOfRecords('ParyAI Expenses');
-        const rows = [
-    {
-        name: 'ParyAI Expensest',
-        content: `Main: ${maintablecount} | Lookup: ${lookupcount} | ${
-            maintablecount === lookupcount ? 'No Mismatch' : 'Mismatch'
-        }`
-    }
-];
+    // Send ONE email containing all three reports
+    await MailUtil.sendReport(
+        'BNB, Climaveneta & ParyAI - Lookup and Main Count',
+        'Combined Validation Report',
+        allReportRows
+    );
 
-await MailUtil.sendReport(
-    'ParyAI - Lookup and Main Count',
-    'ParyAI Validation Report',
-    rows
-);
-    expect(maintablecount).toEqual(lookupcount);    
- 
-    
+    // Fail the test after sending the report if anything mismatched
+    // or any account validation failed.
+    expect(
+        failures,
+        failures.length
+            ? failures.join('\n')
+            : 'All lookup and main counts match.'
+    ).toEqual([]);
 });

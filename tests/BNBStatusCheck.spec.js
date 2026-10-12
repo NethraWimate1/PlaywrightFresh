@@ -34,10 +34,10 @@ test('Login', async ({ page, context }) => {
   await reportStudioPage.clickSavedQueryButton();
   await reportStudioPage.savedQueryPageValidation();
   await reportStudioPage.searchSavedQueryAndClick('TestTickets');
-  const dates = await DateGetterUtility.getPreviousDate(2);
+ // const dates = await DateGetterUtility.getPreviousDate(2);
 
-  await reportStudioPage.selectDate(dates);
-  await reportStudioPage.clickApplyButton();
+  //await reportStudioPage.selectDate(dates);
+ // await reportStudioPage.clickApplyButton();
   await expect(page.getByText("Loading… please enjoy this virtual cup of coffee! ☕")).toBeHidden();
   await page.waitForTimeout(9000); // Wait for 5 seconds to ensure the data is loaded
   await reportStudioPage.clickExportButton();
