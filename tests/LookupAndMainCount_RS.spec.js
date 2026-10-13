@@ -38,11 +38,14 @@ test('Combined Lookup and Main Count Validation', async ({ browser }) => {
                 config.mainQuery
             );
 
-            await expect(
+           /* await expect(
                 page.getByText(
                     'Loading… please enjoy this virtual cup of coffee! ☕'
                 )
-            ).toBeHidden();
+            ).toBeHidden();*/
+            const loader = page.getByText('Loading… please enjoy this virtual cup of coffee! ☕');
+await loader.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+await loader.waitFor({ state: 'hidden' });
 
             const mainCounts = {};
 
@@ -59,11 +62,14 @@ test('Combined Lookup and Main Count Validation', async ({ browser }) => {
                 config.lookupQuery
             );
 
-            await expect(
+           /* await expect(
                 page.getByText(
                     'Loading… please enjoy this virtual cup of coffee! ☕'
                 )
-            ).toBeHidden();
+            ).toBeHidden();*/
+            const loader2 = page.getByText('Loading… please enjoy this virtual cup of coffee! ☕');
+await loader2.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+await loader2.waitFor({ state: 'hidden' });
 
             const lookupCounts = {};
 
